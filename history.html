@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AI Trade - 履歴</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+        }
+
+        .smooth-transition {
+            transition: all 0.3s ease;
+        }
+
+        .tab-active {
+            color: #10b981;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen pb-20">
+
+    <div x-data="historyApp()">
+
+        <!-- ヘッダー -->
+        <header class="bg-gray-900 px-4 pt-4 pb-3 sticky top-0 z-10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">📋</span>
+                    <h1 class="text-xl font-bold">取引履歴</h1>
+                </div>
+                <span class="text-xs text-gray-400" x-text="trades.length + '件'"></span>
+            </div>
+        </header>
+
+        <!-- フィルター -->
+        <div class="px-4 py-3 sticky top-14 bg-gray-900 z-10 border-b border-gray-800">
+            <div class="flex space-x-2 overflow-x-auto pb-1">
+                <button @click="filter = 'all'"
+                    :class="filter === 'all' ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-400'"
+                    class="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap smooth-transition">
+                    すべて
+                </button>
+                <button @click="filter = 'buy'"
+                    :class="filter === 'buy' ? 'bg-green-500 text-white' : 'bg-gray-800 text-gray-400'"
+                    class="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap smooth-transition">
+                    買い
+                </button>
+                <button @click="filter = 'sell'"
+                    :class="filter === 'sell' ? 'bg-red-500 text-white' : 'bg-gray-800 text-gray-400'"
+                    class="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap smooth-transition">
+                    売り
+                </button>
+            </div>
+        </div>
+
+        <!-- メインコンテンツ -->
+        <main class="px-4 py-4">
+
+            <!-- 取引履歴リスト -->
+            <div class="space-y-3">
+                <template x-for="trade in filteredTrades" :key="trade.id">
+                    <div class="bg-gray-800/50 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                                    :class="trade.iconBg">
+                                    <span class="text-sm font-bold" x-text="trade.icon"></span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-medium" x-text="trade.asset"></span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full"
+                                            :class="trade.type === 'buy' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+                                            x-text="trade.type === 'buy' ? '買い' : '売り'"></span>
+                                    </div>
+                                    <p class="text-xs text-gray-400" x-text="trade.date"></p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium" x-text="trade.amount"></p>
+                                <p class="text-xs" :class="trade.profit >= 0 ? 'text-green-400' : 'text-red-400'"
+                                    x-text="(trade.profit >= 0 ? '+' : '') + trade.profitDisplay"></p>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-700">
+                            <span x-text="'約定価格: ' + trade.price"></span>
+                            <span x-text="trade.reason"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- 取引がない場合 -->
+            <div x-show="filteredTrades.length === 0" class="text-center py-12">
+                <div class="text-4xl mb-3">📭</div>
+                <p class="text-gray-400">該当する取引がありません</p>
+            </div>
+
+        </main>
+
+        <!-- 下部タブバー -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-gray-800/95 backdrop-blur border-t border-gray-700 z-20">
+            <div class="flex justify-around items-center h-16">
+                <a href="index.html"
+                    class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-white smooth-transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                        </path>
+                    </svg>
+                    <span class="text-xs mt-1">ホーム</span>
+                </a>
+                <a href="portfolio.html" class="flex flex-col items-center justify-center w-full h-full tab-active">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    <span class="text-xs mt-1">運用</span>
+                </a>
+                <a href="report.html"
+                    class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-white smooth-transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
+                    </svg>
+                    <span class="text-xs mt-1">レポート</span>
+                </a>
+                <a href="settings.html"
+                    class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-white smooth-transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span class="text-xs mt-1">設定</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        function historyApp() {
+            return {
+                filter: 'all',
+                trades: [
+                    { id: 1, asset: 'BTC', icon: '₿', iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600', type: 'buy', date: '2026/01/29 10:30', amount: '0.05 BTC', price: '¥13,600,000', profit: 45000, profitDisplay: '¥45,000', reason: 'RSI反発サイン' },
+                    { id: 2, asset: 'BTC', icon: '₿', iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600', type: 'sell', date: '2026/01/25 14:15', amount: '0.03 BTC', price: '¥13,800,000', profit: 82000, profitDisplay: '¥82,000', reason: '利確ライン到達' },
+                    { id: 3, asset: 'BTC', icon: '₿', iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600', type: 'buy', date: '2026/01/20 09:00', amount: '0.03 BTC', price: '¥13,100,000', profit: 0, profitDisplay: '¥0', reason: 'MACDゴールデンクロス' },
+                    { id: 4, asset: 'BTC', icon: '₿', iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600', type: 'sell', date: '2026/01/10 16:45', amount: '0.08 BTC', price: '¥13,500,000', profit: 125000, profitDisplay: '¥125,000', reason: '目標価格到達' },
+                    { id: 5, asset: 'BTC', icon: '₿', iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600', type: 'buy', date: '2025/12/28 11:00', amount: '0.08 BTC', price: '¥12,600,000', profit: 0, profitDisplay: '¥0', reason: 'ボリンジャー下限反発' }
+                ],
+                get filteredTrades() {
+                    if (this.filter === 'all') return this.trades;
+                    return this.trades.filter(t => t.type === this.filter);
+                }
+            }
+        }
+    </script>
+
+<script src="js/plan-switcher.js"></script>
+</body>
+
+</html>

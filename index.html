@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>AI Trade - リアルタイム売買シグナル</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+  <style>
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #16202f;
+      --bg-tertiary: #1f2d3d;
+      --accent-gold: #fbbf24;
+      --accent-cyan: #06b6d4;
+      --accent-red: #f87171;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-tertiary: #94a3b8;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'IBM Plex Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overscroll-behavior: none;
+      letter-spacing: 0.5px;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Syne', sans-serif;
+      letter-spacing: -0.5px;
+    }
+
+    .smooth-transition {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Mobile bottom nav fix */
+    .mobile-bottom-nav .flex {
+      width: 100%;
+    }
+
+    .mobile-bottom-nav a {
+      flex: 1;
+    }
+
+    .glass-card {
+      background: rgba(22, 32, 47, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(251, 191, 36, 0.1);
+    }
+
+    .glass-card.premium {
+      background: rgba(251, 191, 36, 0.03);
+      border-color: rgba(251, 191, 36, 0.2);
+    }
+
+    .accent-gradient {
+      background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-cyan) 100%);
+    }
+
+    .shimmer {
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .tab-active {
+      color: var(--accent-gold);
+      border-bottom: 2px solid var(--accent-gold);
+    }
+
+    .period-tab {
+      padding: 6px 14px;
+      font-size: 12px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .period-tab.active {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+      color: var(--text-primary);
+      border: 1px solid var(--accent-gold);
+    }
+
+    .period-tab:not(.active) {
+      color: var(--text-tertiary);
+      border: 1px solid transparent;
+    }
+
+    .price-up {
+      color: var(--accent-cyan);
+    }
+
+    .price-down {
+      color: var(--accent-red);
+    }
+
+    .phase-legend {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid rgba(251, 191, 36, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'IBM Plex Sans JP', monospace;
+      letter-spacing: -1px;
+    }
+
+    .signal-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .signal-badge.buy {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid var(--accent-cyan);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+
+    .signal-badge.sell {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--accent-red);
+      border: 1px solid var(--accent-red);
+      box-shadow: 0 0 20px rgba(248, 113, 113, 0.2);
+    }
+
+    .signal-badge.hold {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-tertiary);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+
+    /* PC レスポンシブ対応 */
+    main {
+      width: 100%;
+      padding: 1rem 16px;
+    }
+
+    @media (min-width: 768px) {
+      main {
+        padding: 1.5rem;
+        max-width: 1280px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      main {
+        padding: 2rem;
+        padding-left: 80px;
+        padding-right: 80px;
+      }
+    }
+
+    .premium-lock {
+      position: relative;
+      background: rgba(251, 191, 36, 0.03);
+      border: 1px dashed rgba(251, 191, 36, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .premium-lock::before {
+      content: '🔒';
+      display: block;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    /* Desktop Sidebar Navigation */
+    .sidebar-nav {
+      display: none; /* Hidden on mobile */
+    }
+
+    .mobile-bottom-nav {
+      display: flex;
+    }
+
+    @media (min-width: 1024px) {
+      .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        left: 0;
+        top: 60px;
+        bottom: 0;
+        width: 240px;
+        background: linear-gradient(180deg,
+          rgba(15, 17, 23, 0.98) 0%,
+          rgba(22, 32, 47, 0.95) 100%);
+        backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(251, 191, 36, 0.1);
+        z-index: 30;
+        overflow-y: auto;
+        padding: 20px 0;
+        margin-right: 30px;
+      }
+
+      /* Adjust body for sidebar and header */
+      body {
+        padding-left: 270px;
+        padding-bottom: 0;
+        padding-top: 60px;
+      }
+
+      /* Hide mobile bottom nav on desktop */
+      .mobile-bottom-nav {
+        display: none;
+      }
+
+      /* Adjust header for full width */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 999;
+      }
+
+      /* Hide sidebar header on desktop */
+      .sidebar-header {
+        display: none;
+      }
+
+      /* PC Header Layout */
+      header .px-4 {
+        padding-left: 2rem;
+        padding-right: 2rem;
+      }
+
+
+      .header-desktop {
+        display: flex !important;
+      }
+    }
+
+    /* Desktop header styles */
+    .header-desktop {
+      display: none;
+    }
+
+    .currency-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .currency-dropdown-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .currency-dropdown-btn:hover {
+      background: rgba(251, 191, 36, 0.15);
+      border-color: rgba(251, 191, 36, 0.3);
+    }
+
+    .currency-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      min-width: 180px;
+      background: rgba(22, 32, 47, 0.95);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      padding: 8px 0;
+      margin-top: 4px;
+    }
+
+    .currency-dropdown-item {
+      padding: 10px 16px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .currency-dropdown-item:hover,
+    .currency-dropdown-item.active {
+      background: rgba(251, 191, 36, 0.1);
+      color: var(--accent-gold);
+    }
+
+    .currency-dropdown-item.active::before {
+      content: '✓';
+      font-weight: bold;
+      color: var(--accent-gold);
+    }
+
+    /* Sidebar Sections */
+    .sidebar-header {
+      padding: 0 16px 24px 16px;
+      border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-brand:hover {
+      opacity: 0.8;
+    }
+
+    .sidebar-logo {
+      font-size: 24px;
+      font-weight: bold;
+      background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sidebar-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: 'Syne', sans-serif;
+    }
+
+    .sidebar-nav-section {
+      padding: 8px 16px 24px 16px;
+    }
+
+    .sidebar-nav-section:not(:first-of-type) {
+      border-top: 1px solid rgba(251, 191, 36, 0.1);
+      padding-top: 24px;
+    }
+
+    .sidebar-nav-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sidebar-nav-item {
+      margin: 0;
+      padding: 0;
+    }
+
+    .sidebar-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-nav-link:hover {
+      background: rgba(251, 191, 36, 0.08);
+      color: var(--text-primary);
+    }
+
+    .sidebar-nav-link.sidebar-active {
+      background: linear-gradient(135deg,
+        rgba(251, 191, 36, 0.12) 0%,
+        rgba(6, 182, 212, 0.08) 100%);
+      color: var(--accent-gold);
+      border-left: 3px solid var(--accent-gold);
+      padding-left: 13px;
+    }
+
+    .sidebar-nav-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-secondary {
+      padding: 8px 16px;
+      flex: 1;
+    }
+
+    .sidebar-secondary-title {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 0 16px 12px 16px;
+      margin: 0;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid rgba(251, 191, 36, 0.1);
+      margin-top: auto;
+    }
+
+    .sidebar-user-card {
+      background: rgba(251, 191, 36, 0.05);
+      border: 1px solid rgba(251, 191, 36, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sidebar-user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(251, 191, 36, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-user-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .sidebar-plan-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--accent-gold);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-upgrade-btn {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));
+      color: var(--bg-primary);
+      text-decoration: none;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .sidebar-upgrade-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(251, 191, 36, 0.2);
+    }
+
+    /* Scrollbar customization for sidebar */
+    .sidebar-nav::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+      background: rgba(251, 191, 36, 0.2);
+      border-radius: 3px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb:hover {
+      background: rgba(251, 191, 36, 0.4);
+    }
+  </style>
+</head>
+
+<body class="text-white min-h-screen pb-20">
+
+  <div x-data="marketApp()" x-init="initCharts()">
+
+    <!-- Desktop Sidebar Navigation -->
+    <aside class="sidebar-nav">
+      <!-- Branding -->
+      <div class="sidebar-header" style="display: none;">
+        <a href="index.html" class="sidebar-brand">
+          <span class="sidebar-logo">₿</span>
+          <span class="sidebar-title">AI Trade</span>
+        </a>
+      </div>
+
+      <!-- Main Navigation -->
+      <nav class="sidebar-nav-section">
+        <ul class="sidebar-nav-list">
+          <li class="sidebar-nav-item">
+            <a href="index.html" class="sidebar-nav-link" data-page="index.html">
+              <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+              </svg>
+              <span>ホーム</span>
+            </a>
+          </li>
+          <li class="sidebar-nav-item">
+            <a href="performance.html" class="sidebar-nav-link" data-page="performance.html">
+              <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+              </svg>
+              <span>実績</span>
+            </a>
+          </li>
+          <li class="sidebar-nav-item">
+            <a href="reports.html" class="sidebar-nav-link" data-page="reports.html">
+              <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <span>レポート</span>
+            </a>
+          </li>
+          <li class="sidebar-nav-item">
+            <a href="settings.html" class="sidebar-nav-link" data-page="settings.html">
+              <svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <span>設定</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Footer / User Info -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user-card">
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-avatar">👤</div>
+            <div>
+              <div class="sidebar-user-name">ゲストユーザー</div>
+              <span class="sidebar-plan-badge">Free</span>
+            </div>
+          </div>
+          <a href="pricing.html" class="sidebar-upgrade-btn">
+            プランをアップグレード
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ヘッダー -->
+    <header class="fixed top-0 left-0 right-0 z-10 border-b" style="background: linear-gradient(180deg, var(--bg-primary) 0%, rgba(15, 17, 23, 0.95) 100%); border-color: rgba(251, 191, 36, 0.1);">
+      <div class="px-4 py-3">
+        <div class="flex items-center space-x-3">
+          <span class="text-2xl font-bold" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">₿</span>
+          <h1 class="text-lg font-bold">AI Trade</h1>
+        </div>
+      </div>
+    </header>
+
+
+    <!-- メインコンテンツ -->
+    <main>
+
+      <!-- ========== 通貨選択 ========== -->
+      <div class="mb-6" x-data="{ currencyOpen: false, selectedCurrency: 'Bitcoin' }">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold">🏠 ホーム</h2>
+          <div class="currency-dropdown">
+            <button @click="currencyOpen = !currencyOpen" class="currency-dropdown-btn">
+              <span x-text="selectedCurrency"></span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div class="currency-dropdown-menu" x-show="currencyOpen" @click.outside="currencyOpen = false">
+              <div class="currency-dropdown-item" @click="selectedCurrency = 'Bitcoin'; currencyOpen = false" :class="selectedCurrency === 'Bitcoin' ? 'active' : ''">Bitcoin (BTC)</div>
+              <div class="currency-dropdown-item" @click="selectedCurrency = 'Ethereum'; currencyOpen = false" :class="selectedCurrency === 'Ethereum' ? 'active' : ''">Ethereum (ETH)</div>
+              <div class="currency-dropdown-item" @click="selectedCurrency = 'Ripple'; currencyOpen = false" :class="selectedCurrency === 'Ripple' ? 'active' : ''">Ripple (XRP)</div>
+              <div class="currency-dropdown-item" @click="selectedCurrency = 'Cardano'; currencyOpen = false" :class="selectedCurrency === 'Cardano' ? 'active' : ''">Cardano (ADA)</div>
+              <div class="currency-dropdown-item" @click="selectedCurrency = 'Solana'; currencyOpen = false" :class="selectedCurrency === 'Solana' ? 'active' : ''">Solana (SOL)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== プライス & シグナル ========== -->
+      <div class="mb-6">
+        <!-- 価格情報 -->
+        <div class="stat-card" style="border: 1px solid rgba(251, 191, 36, 0.15);">
+          <div class="stat-label">現在価格</div>
+          <div class="flex items-baseline justify-between mb-2">
+            <span class="stat-value" x-text="formatPriceCompact(currentPrice)"></span>
+            <span class="text-lg font-bold flex items-center space-x-1" :class="priceChange >= 0 ? 'text-cyan-400' : 'text-red-400'">
+              <span x-text="priceChange >= 0 ? '↗' : '↘'"></span>
+              <span x-text="Math.abs(priceChange).toFixed(2) + '%'"></span>
+            </span>
+          </div>
+          <div class="text-xs" style="color: var(--text-tertiary);">
+            <span x-text="'日足: ' + highPrice.toLocaleString('ja-JP') + '〜' + lowPrice.toLocaleString('ja-JP')"></span>
+          </div>
+        </div>
+
+        <!-- シグナル表示エリア -->
+        <div class="mt-4">
+          <!-- 無料プラン: 誘導 -->
+          <div x-show="currentPlan === 'free'" class="glass-card rounded-xl p-4">
+            <div class="flex items-center space-x-3">
+              <span class="text-2xl">⚡</span>
+              <div>
+                <p class="text-sm font-bold" style="color: var(--accent-gold);">売買シグナルを表示</p>
+                <p class="text-xs" style="color: var(--text-tertiary);">リアルタイム売買サインはプレミアムプランで利用可能</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 有料プラン: BUY/SELL/HOLDサイン -->
+          <div x-show="currentPlan !== 'free'" class="text-center">
+            <div class="inline-flex items-center gap-3 px-6 py-3 rounded-lg"
+              :class="currentSignal.type === 'buy' ? 'bg-cyan-500/20 border border-cyan-500/50' :
+                       currentSignal.type === 'sell' ? 'bg-red-500/20 border border-red-500/50' :
+                       'bg-gray-500/20 border border-gray-500/50'">
+              <span class="text-2xl"
+                x-text="currentSignal.type === 'buy' ? '📈' :
+                        currentSignal.type === 'sell' ? '📉' : '⏸️'"></span>
+              <span class="text-lg font-bold"
+                :class="currentSignal.type === 'buy' ? 'text-cyan-400' :
+                         currentSignal.type === 'sell' ? 'text-red-400' :
+                         'text-gray-400'"
+                x-text="currentSignal.label"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- ========== チャート ========== -->
+      <div class="mb-6">
+        <!-- フェーズ凡例 -->
+        <div class="phase-legend justify-center mb-4 px-2" style="color: var(--text-tertiary);">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm" style="background:rgba(16, 185, 129, 0.6)"></span>
+            <span class="text-xs font-medium">Bottom</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm" style="background:rgba(59, 130, 246, 0.6)"></span>
+            <span class="text-xs font-medium">Bull</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm" style="background:rgba(245, 158, 11, 0.6)"></span>
+            <span class="text-xs font-medium">Top</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm" style="background:rgba(248, 113, 113, 0.6)"></span>
+            <span class="text-xs font-medium">Bear</span>
+          </div>
+        </div>
+
+        <!-- メインチャート -->
+        <div class="glass-card rounded-xl overflow-hidden" style="height: 360px; margin: 0 -4px; background: rgba(22, 32, 47, 0.6);" class="md:h-96">
+          <canvas id="mainChart"></canvas>
+        </div>
+
+        <!-- 期間切り替えタブ -->
+        <div class="flex justify-center gap-1.5 mt-4 mb-4 flex-wrap">
+          <template x-for="period in periods" :key="period.value">
+            <button @click="changePeriod(period.value)" :class="currentPeriod === period.value ? 'active' : ''"
+              class="period-tab" x-text="period.label"></button>
+          </template>
+        </div>
+      </div>
+
+      <!-- ========== 戦略シナリオ ========== -->
+      <!-- Premium限定: 戦略シナリオ -->
+      <div x-show="currentPlan === 'plan2'" class="mb-6">
+        <div class="glass-card premium rounded-xl p-5" style="border: 1px solid rgba(251, 191, 36, 0.3);">
+          <div class="flex items-center justify-between mb-4 pb-3" style="border-bottom: 1px solid rgba(251, 191, 36, 0.2);">
+            <h3 class="text-sm font-bold flex items-center gap-2" style="color: var(--accent-gold);">
+              <span>🎯</span>
+              <span>戦略シナリオ</span>
+            </h3>
+            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full" style="background: rgba(251, 191, 36, 0.2); color: var(--accent-gold);">PREMIUM</span>
+          </div>
+
+          <div class="space-y-4">
+            <!-- TP ラインプ -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium flex items-center gap-1.5" style="color: var(--text-tertiary);">
+                  <span style="color: var(--accent-cyan);">▲</span>
+                  利確目標 (TP)
+                </span>
+                <span class="text-base font-bold" style="color: var(--accent-cyan);">¥7,200,000</span>
+              </div>
+              <div class="h-2 rounded-full overflow-hidden" style="background: rgba(6, 182, 212, 0.15);">
+                <div class="h-full rounded-full" style="width: 85%; background: linear-gradient(90deg, var(--accent-cyan) 0%, rgba(6, 182, 212, 0.5) 100%);"></div>
+              </div>
+            </div>
+
+            <!-- SL ライン -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium flex items-center gap-1.5" style="color: var(--text-tertiary);">
+                  <span style="color: var(--accent-red);">▼</span>
+                  損切りライン (SL)
+                </span>
+                <span class="text-base font-bold" style="color: var(--accent-red);">¥6,880,000</span>
+              </div>
+              <div class="h-2 rounded-full overflow-hidden" style="background: rgba(248, 113, 113, 0.15);">
+                <div class="h-full rounded-full" style="width: 30%; background: linear-gradient(90deg, var(--accent-red) 0%, rgba(248, 113, 113, 0.5) 100%);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standard以下: アップグレード訴求 -->
+      <div x-show="currentPlan !== 'plan2'" class="mb-6">
+        <div class="premium-lock">
+          <p class="text-sm font-bold mb-3">推奨利確・損切りラインを見る</p>
+          <a href="pricing.html" class="inline-block text-xs font-bold px-4 py-2 rounded-lg smooth-transition"
+            style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); color: var(--bg-primary);">
+            Premiumプランにアップグレード
+          </a>
+        </div>
+      </div>
+
+      <!-- ========== AI マーケット インサイト ========== -->
+      <div class="glass-card premium rounded-xl p-5" style="border: 1px solid rgba(251, 191, 36, 0.2);">
+        <div class="flex items-center justify-between mb-4 pb-3" style="border-bottom: 1px solid rgba(251, 191, 36, 0.15);">
+          <h3 class="text-base font-bold flex items-center gap-2">
+            <span>🤖</span>
+            <span>AI Market Insight</span>
+          </h3>
+        </div>
+
+        <!-- ニュースヘッドライン -->
+        <div class="mb-4">
+          <h4 class="font-bold text-sm mb-2">📢 米雇用統計、予想を上回る</h4>
+          <p class="text-xs leading-relaxed" style="color: var(--text-secondary);">
+            1月度の米雇用統計は市場予想を大きく上回り、労働市場の堅調さが示されました。これを受け長期金利は上昇傾向にあります。
+          </p>
+        </div>
+
+        <!-- AI分析（プラン別） -->
+        <div>
+          <!-- Free: ロック表示 -->
+          <div x-show="currentPlan === 'free'" class="premium-lock py-5">
+            <p class="text-sm font-bold mb-2">AIの詳細分析を読む</p>
+            <p class="text-xs mb-4" style="color: var(--text-tertiary);">今後の値動き予測と売買推奨</p>
+            <button @click="window.location.href='pricing.html'" class="text-xs font-bold px-3 py-1.5 rounded smooth-transition"
+              style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); color: var(--bg-primary);">
+              Standardプランで解除
+            </button>
+          </div>
+
+          <!-- Standard+: 詳細分析 -->
+          <div x-show="currentPlan !== 'free'" class="p-4 rounded-lg" style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2);">
+            <h5 class="text-xs font-bold mb-2" style="color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px;">分析</h5>
+            <p class="text-xs leading-relaxed" style="color: var(--text-secondary);">
+              金利上昇懸念から短期的な調整圧力が強いものの、オンチェーンデータでは大口の買い集めが継続しています。押し目買いの好機と判断します。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- 免責事項 -->
+  <div class="text-center px-4 py-6" style="color: var(--text-tertiary);">
+    <p class="text-[11px] leading-relaxed mb-1">※ 本サービスは情報提供を目的としたものであり、投資助言ではありません。</p>
+    <p class="text-[11px]">投資判断はご自身の責任で行ってください。</p>
+  </div>
+
+  </main>
+
+  <!-- 下部タブバー -->
+  <nav class="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-20" style="background: linear-gradient(180deg, rgba(15, 17, 23, 0) 0%, var(--bg-primary) 20%); border-top: 1px solid rgba(251, 191, 36, 0.1); backdrop-filter: blur(12px);">
+    <div class="flex justify-around items-center h-16">
+      <a href="index.html" class="flex flex-col items-center justify-center w-full h-full smooth-transition tab-active">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+          </path>
+        </svg>
+        <span class="text-xs mt-1 font-medium">ホーム</span>
+      </a>
+      <a href="performance.html"
+        class="flex flex-col items-center justify-center w-full h-full smooth-transition" style="color: var(--text-tertiary); transition: color 0.3s;">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6">
+          </path>
+        </svg>
+        <span class="text-xs mt-1 font-medium">実績</span>
+      </a>
+      <a href="reports.html"
+        class="flex flex-col items-center justify-center w-full h-full smooth-transition" style="color: var(--text-tertiary); transition: color 0.3s;">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+          </path>
+        </svg>
+        <span class="text-xs mt-1 font-medium">レポート</span>
+      </a>
+      <a href="settings.html"
+        class="flex flex-col items-center justify-center w-full h-full smooth-transition" style="color: var(--text-tertiary); transition: color 0.3s;">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+          </path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+        <span class="text-xs mt-1 font-medium">設定</span>
+      </a>
+    </div>
+  </nav>
+  </div>
+
+  <script>
+    function marketApp() {
+      return {
+        currentPlan: 'free', // 'free', 'plan1', 'plan2'
+
+        // 価格データ
+        currentPrice: 6989214,
+        priceChange: -0.62,
+        priceChangeAmount: -43825,
+        highPrice: 7145353,
+        lowPrice: 6938900,
+        openPrice: 7033039,
+        prevClose: 7033039,
+        volume: 651000000,
+
+        // 期間設定
+        currentPeriod: '1h',
+        periods: [
+          { value: '5m', label: '5分' },
+          { value: '15m', label: '15分' },
+          { value: '1h', label: '1時間' },
+          { value: '4h', label: '4時間' },
+          { value: '1d', label: '日足' },
+          { value: '1w', label: '週足' }
+        ],
+
+        init() {
+          this.currentPlan = window.PlanSwitcher?.getCurrentPlan?.() || 'free';
+          window.addEventListener('planChanged', (e) => {
+            this.currentPlan = e.detail.plan;
+            this.changePeriod(this.currentPeriod);
+          });
+        },
+
+        // --- 復活: 欠落していたメソッド群 ---
+
+        formatPriceCompact(price) {
+          return price.toLocaleString('ja-JP');
+        },
+
+        formatVolume(vol) {
+          if (vol >= 100000000) {
+            return (vol / 100000000).toFixed(2) + '億';
+          } else if (vol >= 10000) {
+            return (vol / 10000).toFixed(0) + '万';
+          }
+          return vol.toLocaleString();
+        },
+
+        generateChartData() {
+          const data = [];
+          const config = {
+            '5m': { periods: 120, intervalMinutes: 5 },
+            '15m': { periods: 100, intervalMinutes: 15 },
+            '1h': { periods: 100, intervalMinutes: 60 },
+            '4h': { periods: 100, intervalMinutes: 240 },
+            '1d': { periods: 90, intervalMinutes: 1440 },
+            '1w': { periods: 52, intervalMinutes: 10080 }
+          };
+          const { periods, intervalMinutes } = config[this.currentPeriod] || config['1h'];
+          const now = new Date();
+          const startDate = new Date(now.getTime() - periods * intervalMinutes * 60 * 1000);
+          const targetPrice = this.currentPrice;
+          let price = targetPrice * (0.85 + Math.random() * 0.1);
+
+          for (let i = 0; i < periods; i++) {
+            const date = new Date(startDate.getTime() + i * intervalMinutes * 60 * 1000);
+            let trendBias = 0;
+            if (i < periods * 0.35) trendBias = 0.015; else if (i < periods * 0.5) trendBias = 0; else if (i < periods * 0.75) trendBias = -0.012; else trendBias = 0.008;
+
+            if (i >= periods - 5) {
+              const remaining = periods - i;
+              const diff = targetPrice - price;
+              trendBias = (diff / price) / remaining;
+            }
+            const volatility = price * 0.02;
+            const change = (Math.random() - 0.5 + trendBias) * volatility;
+            const open = price;
+            const close = open + change;
+            const high = Math.max(open, close) + Math.random() * volatility * 0.3;
+            const low = Math.min(open, close) - Math.random() * volatility * 0.3;
+
+            data.push({ x: date.getTime(), o: open, h: high, l: low, c: close });
+            price = close;
+          }
+          return data;
+        },
+
+        generateVolumeData(candleData) {
+          return candleData.map(candle => {
+            const priceRange = candle.h - candle.l;
+            const baseVol = 50000000 + Math.random() * 100000000;
+            const volatilityMultiplier = 1 + (priceRange / candle.o) * 50;
+            return {
+              x: candle.x,
+              y: baseVol * volatilityMultiplier,
+              color: candle.c >= candle.o ? 'rgba(38, 166, 154, 0.6)' : 'rgba(239, 83, 80, 0.6)'
+            };
+          });
+        },
+
+        changePeriod(period) {
+          this.currentPeriod = period;
+          if (window._mainChart) { window._mainChart.destroy(); window._mainChart = null; }
+          // volumeChartは削除（メインチャートに統合）
+
+          ['mainChart'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+              const container = el.parentElement;
+              container.removeChild(el);
+              const newCanvas = document.createElement('canvas');
+              newCanvas.id = id;
+              container.appendChild(newCanvas);
+            }
+          });
+          this.initCharts();
+        },
+
+        // 相場フェーズ定義（現在時刻ベースで動的に計算）
+        get currentPhase() {
+          const now = new Date();
+          const minutes = now.getMinutes();
+          if (minutes < 15) {
+            return { status: 'bull', label: 'Bull', desc: '上昇トレンド発生中。押し目買い推奨エリアです。' };
+          } else if (minutes < 30) {
+            return { status: 'top', label: 'Top', desc: '過熱感があります。利確を検討してください。' };
+          } else if (minutes < 45) {
+            return { status: 'bear', label: 'Bear', desc: '下落警戒。戻り売り優勢の局面です。' };
+          } else {
+            return { status: 'bottom', label: 'Bottom', desc: '反転の兆し。買い集めの好機です。' };
+          }
+        },
+
+        getMarketPhases() {
+          const now = new Date();
+          const config = {
+            '5m': { periods: 120, intervalMinutes: 5 },
+            '15m': { periods: 100, intervalMinutes: 15 },
+            '1h': { periods: 100, intervalMinutes: 60 },
+            '4h': { periods: 100, intervalMinutes: 240 },
+            '1d': { periods: 90, intervalMinutes: 1440 },
+            '1w': { periods: 52, intervalMinutes: 10080 }
+          };
+          const { periods, intervalMinutes } = config[this.currentPeriod] || config['1h'];
+          const totalMs = periods * intervalMinutes * 60 * 1000;
+          const startTime = new Date(now.getTime() - totalMs);
+
+          // チャート期間を4つのフェーズに分割
+          const phaseLength = totalMs / 4;
+          return [
+            { start: startTime.getTime(), end: startTime.getTime() + phaseLength, status: 'bottom', label: 'Bottom' },
+            { start: startTime.getTime() + phaseLength, end: startTime.getTime() + phaseLength * 2, status: 'bull', label: 'Bull' },
+            { start: startTime.getTime() + phaseLength * 2, end: startTime.getTime() + phaseLength * 3, status: 'top', label: 'Top' },
+            { start: startTime.getTime() + phaseLength * 3, end: now.getTime(), status: 'bear', label: 'Bear' }
+          ];
+        },
+
+        // 現在の売買シグナル判定（直近のサインに基づき判定）
+        get currentSignal() {
+          if (this.currentPlan === 'free') {
+            return { type: 'hold', label: 'HOLD', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' };
+          }
+
+          // generateTradeSignals と同じロジックで直近のサインを探す
+          const config = {
+            '5m': { periods: 120 }, '15m': { periods: 100 }, '1h': { periods: 100 },
+            '4h': { periods: 100 }, '1d': { periods: 90 }, '1w': { periods: 52 }
+          };
+          const { periods } = config[this.currentPeriod] || config['1h'];
+
+          // 後ろから遡って一番近いサインを探す
+          for (let i = periods - 1; i >= 0; i--) {
+            if (i % 20 === 5) {
+              const isBuy = (i % 40 < 20);
+              if (isBuy) {
+                return { type: 'buy', label: 'BUY', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' };
+              } else {
+                return { type: 'sell', label: 'SELL', color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30' };
+              }
+            }
+          }
+
+          return { type: 'hold', label: 'HOLD', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' };
+        },
+
+        // 背景色帯のアノテーション生成（全プラン共通）
+        generateBackgroundAnnotations() {
+          const phases = this.getMarketPhases();
+          const colors = {
+            bottom: 'rgba(16, 185, 129, 0.2)', // Emerald
+            bull: 'rgba(59, 130, 246, 0.2)',   // Blue
+            top: 'rgba(245, 158, 11, 0.2)',    // Amber
+            bear: 'rgba(239, 68, 68, 0.2)'     // Red
+          };
+
+          const annotations = {};
+          phases.forEach((phase, i) => {
+            // フェーズ背景色
+            annotations[`phase${i}`] = {
+              type: 'box',
+              xMin: phase.start,
+              xMax: phase.end,
+              backgroundColor: colors[phase.status],
+              borderWidth: 0,
+              drawTime: 'beforeDatasetsDraw', // ローソク足の下に描画
+              label: { display: false, content: phase.label, position: 'start', color: 'rgba(255,255,255,0.3)', font: { size: 10 } }
+            };
+
+            // フェーズ境界線（最初のフェーズ以外）
+            if (i > 0) {
+              annotations[`phaseBorder${i}`] = {
+                type: 'line',
+                xMin: phase.start,
+                xMax: phase.start,
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                borderWidth: 1,
+                borderDash: [4, 4],
+                drawTime: 'beforeDatasetsDraw' // ローソク足の下に描画
+              };
+            }
+          });
+          return annotations;
+        },
+
+        // 売買サイン生成（Standard以上）
+        generateTradeSignals(candleData) {
+          if (this.currentPlan === 'free') return {};
+          const annotations = {};
+          candleData.forEach((candle, i) => {
+            if (i % 20 === 5) { // 適当な間隔でサイン
+              const isBuy = (i % 40 < 20); // 周期的に
+              annotations[`signal${i}`] = {
+                type: 'point', xValue: candle.x, yValue: isBuy ? candle.l * 0.995 : candle.h * 1.005,
+                backgroundColor: isBuy ? '#10b981' : '#ef4444', radius: 6, rotation: isBuy ? 0 : 180, style: 'triangle',
+                drawTime: 'afterDatasetsDraw' // ローソク足の上に描画
+              };
+              // labelを使った矢印表示
+              annotations[`arrow${i}`] = {
+                type: 'label', xValue: candle.x, yValue: isBuy ? candle.l * 0.998 : candle.h * 1.002,
+                content: isBuy ? '⬆' : '⬇', color: isBuy ? '#10b981' : '#ef4444', font: { size: 16, weight: 'bold' }, position: 'center',
+                drawTime: 'afterDatasetsDraw' // ローソク足の上に描画
+              };
+            }
+          });
+          return annotations;
+        },
+
+        // TP/SLライン生成（Plan 2のみ）
+        generateTPSLAnnotations() {
+          if (this.currentPlan !== 'plan2') return {};
+          const currentPrice = this.currentPrice;
+          return {
+            tpLine: {
+              type: 'line', yMin: currentPrice * 1.02, yMax: currentPrice * 1.02, borderColor: 'rgba(16, 185, 129, 0.8)', borderWidth: 2, borderDash: [6, 6],
+              drawTime: 'afterDatasetsDraw', // ローソク足の上に描画
+              label: { display: true, content: 'TP: ¥' + Math.floor(currentPrice * 1.02).toLocaleString(), position: 'end', backgroundColor: 'rgba(16, 185, 129, 0.8)', color: 'white', font: { size: 10 } }
+            },
+            slLine: {
+              type: 'line', yMin: currentPrice * 0.98, yMax: currentPrice * 0.98, borderColor: 'rgba(239, 68, 68, 0.8)', borderWidth: 2, borderDash: [6, 6],
+              drawTime: 'afterDatasetsDraw', // ローソク足の上に描画
+              label: { display: true, content: 'SL: ¥' + Math.floor(currentPrice * 0.98).toLocaleString(), position: 'end', backgroundColor: 'rgba(239, 68, 68, 0.8)', color: 'white', font: { size: 10 } }
+            }
+          };
+        },
+
+        getTimeAxisConfig() {
+          const configs = {
+            '5m': { unit: 'hour', displayFormats: { hour: 'HH:mm' } },
+            '15m': { unit: 'hour', displayFormats: { hour: 'HH:mm' } },
+            '1h': { unit: 'day', displayFormats: { day: 'M/d' } },
+            '4h': { unit: 'day', displayFormats: { day: 'M/d' } },
+            '1d': { unit: 'month', displayFormats: { month: 'yyyy/MM' } },
+            '1w': { unit: 'month', displayFormats: { month: 'yyyy/MM' } }
+          };
+          return configs[this.currentPeriod] || configs['1h'];
+        },
+
+        initCharts() {
+          const data = this.generateChartData();
+          const volumeData = this.generateVolumeData(data);
+
+          // アノテーション統合
+          const annotations = {
+            ...this.generateBackgroundAnnotations(),
+            ...this.generateTradeSignals(data),
+            ...this.generateTPSLAnnotations()
+          };
+
+          // メインチャート（windowに直接保持してAlpineのProxyを回避）
+          const mainCtx = document.getElementById('mainChart').getContext('2d');
+
+          // 出来高の最大値を計算（スケーリング用）
+          const maxVolume = Math.max(...volumeData.map(d => d.y));
+
+          window._mainChart = new Chart(mainCtx, {
+            type: 'candlestick',
+            data: {
+              datasets: [
+                {
+                  label: 'BTC/JPY',
+                  data: data,
+                  backgroundColors: {
+                    up: '#26a69a',
+                    down: '#ef5350',
+                    unchanged: '#888888'
+                  },
+                  borderColors: {
+                    up: '#26a69a',
+                    down: '#ef5350',
+                    unchanged: '#888888'
+                  },
+                  yAxisID: 'y',
+                  order: 1
+                },
+                {
+                  label: 'Volume',
+                  type: 'bar',
+                  data: volumeData.map(d => ({ x: d.x, y: d.y })),
+                  backgroundColor: volumeData.map(d => d.color.replace('0.6', '0.3')), // 透明度を下げる
+                  yAxisID: 'volume',
+                  barPercentage: 0.5,
+                  categoryPercentage: 0.8,
+                  order: 2
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                annotation: {
+                  annotations: annotations
+                },
+                tooltip: {
+                  callbacks: {
+                    label: (context) => {
+                      if (context.dataset.label === 'Volume') {
+                        const val = context.raw.y;
+                        if (val >= 100000000) return '出来高: ' + (val / 100000000).toFixed(1) + '億';
+                        if (val >= 10000) return '出来高: ' + (val / 10000).toFixed(0) + '万';
+                        return '出来高: ' + val.toLocaleString();
+                      }
+                      // Candlestick tooltip default handling
+                      return null;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  type: 'time',
+                  time: this.getTimeAxisConfig(),
+                  grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                  ticks: { display: false },
+                  afterFit: (axis) => { axis.paddingLeft = 0; axis.paddingRight = 0; } // 右側の余白を削除
+                },
+                y: {
+                  position: 'left', // 価格軸を左側に配置
+                  grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false, drawTicks: false },
+                  ticks: {
+                    color: 'rgba(255,255,255,0.5)',
+                    font: { size: 10, weight: 'bold' },
+                    padding: 8,
+                    mirror: true, // チャート内側に描画
+                    z: 1,
+                    maxTicksLimit: 6,
+                    callback: (value) => (value / 10000).toLocaleString()
+                  }
+                },
+                volume: {
+                  position: 'left', // 軸自体は左にあるが非表示にする
+                  display: false,
+                  min: 0,
+                  max: maxVolume * 5, // チャート下部20%程度に収める
+                  grid: { display: false }
+                }
+              },
+              layout: {
+                padding: { left: 0, right: 0, top: 20, bottom: 0 }
+              }
+            }
+          });
+        }
+      }
+    }
+  </script>
+
+  <script src="js/plan-switcher.js"></script>
+
+  <script>
+    // Initialize sidebar active state
+    document.addEventListener('DOMContentLoaded', function() {
+      const currentPath = window.location.pathname;
+      const currentPage = currentPath.split('/').pop() || 'index.html';
+
+      document.querySelectorAll('.sidebar-nav-link').forEach(link => {
+        const linkPage = link.getAttribute('data-page');
+        if (linkPage === currentPage) {
+          link.classList.add('sidebar-active');
+        }
+      });
+
+      // Update sidebar plan badge from localStorage
+      const planBadge = document.querySelector('.sidebar-plan-badge');
+      if (planBadge && window.PlanSwitcher) {
+        const currentPlan = window.PlanSwitcher.getCurrentPlan?.() || 'free';
+        const planLabels = {
+          'free': 'Free',
+          'plan1': 'Standard',
+          'plan2': 'Premium'
+        };
+        planBadge.textContent = planLabels[currentPlan] || 'Free';
+      }
+
+      // Listen for plan changes
+      window.addEventListener('planChanged', (e) => {
+        const planBadge = document.querySelector('.sidebar-plan-badge');
+        if (planBadge) {
+          const planLabels = {
+            'free': 'Free',
+            'plan1': 'Standard',
+            'plan2': 'Premium'
+          };
+          planBadge.textContent = planLabels[e.detail.plan] || 'Free';
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

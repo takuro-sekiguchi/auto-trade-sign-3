@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AI Trade - 自動売買設定</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+        }
+
+        .smooth-transition {
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 28px;
+            background: #374151;
+            border-radius: 14px;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #10b981;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        .step-line {
+            width: 2px;
+            height: 24px;
+            background: #374151;
+            margin-left: 15px;
+        }
+
+        .step-line.completed {
+            background: #10b981;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen">
+
+    <!-- メインコンテンツ -->
+    <div x-data="setupApp()">
+
+        <!-- ヘッダー -->
+        <header class="bg-gray-900 px-4 pt-4 pb-3 sticky top-0 z-10 border-b border-gray-800">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center space-x-2 text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
+                    </svg>
+                    <span class="text-sm">キャンセル</span>
+                </a>
+                <h1 class="font-bold">自動売買設定</h1>
+                <div class="w-16"></div>
+            </div>
+        </header>
+
+        <!-- メインエリア -->
+        <main class="px-4 py-6">
+
+            <!-- イントロ -->
+            <div class="text-center mb-8">
+                <div class="text-4xl mb-3">🤖</div>
+                <h2 class="text-xl font-bold mb-2">自動売買を設定する</h2>
+                <p class="text-sm text-gray-400">AIがサインに基づいて自動で取引を行います</p>
+            </div>
+
+            <!-- 設定フォーム -->
+            <div class="space-y-6">
+
+                <!-- STEP 1: API連携 -->
+                <div class="bg-gray-800/50 rounded-xl p-4">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                            :class="apiConnected ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'">
+                            <span x-show="!apiConnected">1</span>
+                            <svg x-show="apiConnected" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">取引所とAPI連携</h3>
+                            <p class="text-xs text-gray-400">お使いの取引所と接続します</p>
+                        </div>
+                    </div>
+
+                    <div x-show="!apiConnected" class="space-y-3">
+                        <p class="text-sm text-gray-300 mb-3">
+                            自動売買を行うには、取引所のAPIキーが必要です。<br>
+                            あなたの資産は取引所で管理され、AIが売買指示を送信します。
+                        </p>
+                        <div class="space-y-2">
+                            <button @click="selectExchange('bitflyer')"
+                                class="w-full flex items-center space-x-3 p-3 rounded-lg smooth-transition"
+                                :class="selectedExchange === 'bitflyer' ? 'bg-green-500/20 border border-green-500' : 'bg-gray-700 hover:bg-gray-600'">
+                                <span class="text-2xl">🟠</span>
+                                <span class="font-medium">bitFlyer</span>
+                            </button>
+                            <button @click="selectExchange('coincheck')"
+                                class="w-full flex items-center space-x-3 p-3 rounded-lg smooth-transition"
+                                :class="selectedExchange === 'coincheck' ? 'bg-green-500/20 border border-green-500' : 'bg-gray-700 hover:bg-gray-600'">
+                                <span class="text-2xl">🟢</span>
+                                <span class="font-medium">Coincheck</span>
+                            </button>
+                            <button @click="selectExchange('gmo')"
+                                class="w-full flex items-center space-x-3 p-3 rounded-lg smooth-transition"
+                                :class="selectedExchange === 'gmo' ? 'bg-green-500/20 border border-green-500' : 'bg-gray-700 hover:bg-gray-600'">
+                                <span class="text-2xl">🔵</span>
+                                <span class="font-medium">GMOコイン</span>
+                            </button>
+                        </div>
+                        <div x-show="selectedExchange" x-transition class="mt-4 space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">APIキー</label>
+                                <input type="text" x-model="apiKey" placeholder="APIキーを入力"
+                                    class="w-full bg-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">APIシークレット</label>
+                                <input type="password" x-model="apiSecret" placeholder="APIシークレットを入力"
+                                    class="w-full bg-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <button @click="connectApi()"
+                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg smooth-transition"
+                                :disabled="!apiKey || !apiSecret">
+                                接続を確認する
+                            </button>
+                            <p class="text-xs text-gray-500 text-center">
+                                <a href="#" class="text-blue-400 underline">APIキーの取得方法を見る</a>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div x-show="apiConnected" class="flex items-center justify-between p-3 bg-green-500/10 rounded-lg">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-green-400">✓</span>
+                            <span class="text-sm" x-text="selectedExchange + ' と接続済み'"></span>
+                        </div>
+                        <button @click="disconnectApi()" class="text-xs text-gray-400 hover:text-red-400">解除</button>
+                    </div>
+                </div>
+
+                <div class="step-line" :class="apiConnected ? 'completed' : ''"></div>
+
+                <!-- STEP 2: 対象銘柄選択 -->
+                <div class="bg-gray-800/50 rounded-xl p-4"
+                    :class="!apiConnected ? 'opacity-50 pointer-events-none' : ''">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                            :class="selectedAssets.length > 0 && apiConnected ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'">
+                            <span x-show="!(selectedAssets.length > 0 && apiConnected)">2</span>
+                            <svg x-show="selectedAssets.length > 0 && apiConnected" class="w-5 h-5" fill="currentColor"
+                                viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-medium">対象銘柄を選択</h3>
+                            <p class="text-xs text-gray-400">自動売買する銘柄を選んでください</p>
+                        </div>
+                    </div>
+                    <!-- BTCのみ -->
+                    <button @click="toggleAsset('BTC')"
+                        class="w-full flex items-center space-x-3 p-4 rounded-lg smooth-transition"
+                        :class="selectedAssets.includes('BTC') ? 'bg-green-500/20 border border-green-500' : 'bg-gray-700 border border-transparent'">
+                        <div
+                            class="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600">
+                            <span class="text-lg font-bold">₿</span>
+                        </div>
+                        <div class="text-left flex-1">
+                            <div class="font-medium">BTC</div>
+                            <div class="text-xs text-gray-400">ビットコイン</div>
+                        </div>
+                        <svg x-show="selectedAssets.includes('BTC')" class="w-6 h-6 text-green-400" fill="currentColor"
+                            viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                    <p class="text-xs text-gray-500 mt-3 text-center">※ 他の銘柄は随時追加予定です</p>
+                </div>
+
+                <div class="step-line" :class="selectedAssets.length > 0 && apiConnected ? 'completed' : ''"></div>
+
+                <!-- STEP 3: リスクレベル -->
+                <div class="bg-gray-800/50 rounded-xl p-4"
+                    :class="selectedAssets.length === 0 || !apiConnected ? 'opacity-50 pointer-events-none' : ''">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div
+                            class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-gray-600 text-gray-300">
+                            3
+                        </div>
+                        <div>
+                            <h3 class="font-medium">リスクレベルを選択</h3>
+                            <p class="text-xs text-gray-400">運用スタイルに合わせて選択</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <template x-for="level in riskLevels" :key="level.value">
+                            <button @click="riskLevel = level.value"
+                                class="p-4 rounded-lg text-center smooth-transition"
+                                :class="riskLevel === level.value ? 'bg-green-500/20 border-2 border-green-500' : 'bg-gray-700 border-2 border-transparent'">
+                                <div class="text-2xl mb-2" x-text="level.icon"></div>
+                                <div class="text-sm font-medium" x-text="level.label"></div>
+                            </button>
+                        </template>
+                    </div>
+                    <div class="mt-4 p-3 rounded-lg bg-gray-700/50 text-sm text-gray-300">
+                        <span x-text="riskLevels.find(l => l.value === riskLevel)?.description"></span>
+                    </div>
+                </div>
+
+                <!-- 通知設定 -->
+                <div class="bg-gray-800/50 rounded-xl p-4"
+                    :class="selectedAssets.length === 0 || !apiConnected ? 'opacity-50 pointer-events-none' : ''">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-lg">🔔</span>
+                            <div>
+                                <div class="text-sm font-medium">取引通知</div>
+                                <div class="text-xs text-gray-400">取引時にプッシュ通知を受け取る</div>
+                            </div>
+                        </div>
+                        <button @click="notifications = !notifications" class="toggle-switch"
+                            :class="notifications ? 'active' : ''"></button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 確認ボタン -->
+            <div class="mt-8 space-y-3">
+                <button @click="startAutoTrade()"
+                    class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 px-6 rounded-xl smooth-transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="!apiConnected || selectedAssets.length === 0">
+                    自動売買を開始する
+                </button>
+                <p class="text-xs text-gray-500 text-center">
+                    設定はいつでも変更できます
+                </p>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Alpine.js アプリケーション -->
+    <script>
+        function setupApp() {
+            return {
+                // API連携
+                apiConnected: false,
+                selectedExchange: '',
+                apiKey: '',
+                apiSecret: '',
+
+                // 設定
+                selectedAssets: [],
+                riskLevel: 'balanced',
+                notifications: true,
+
+                assets: {
+                    BTC: { name: 'ビットコイン', icon: '₿', iconBg: 'bg-gradient-to-br from-orange-400 to-orange-600' }
+                },
+
+                riskLevels: [
+                    { value: 'safe', label: '安全重視', icon: '🛡️', description: '損失リスクを抑えた安全な運用。利益は控えめですが、大きな損失を避けたい方におすすめ。' },
+                    { value: 'balanced', label: 'バランス', icon: '⚖️', description: 'リスクとリターンのバランスを取った運用。初心者にもおすすめの標準設定です。' },
+                    { value: 'aggressive', label: '積極運用', icon: '🚀', description: '高いリターンを狙う積極的な運用。リスクを許容できる経験者向け。' }
+                ],
+
+                selectExchange(exchange) {
+                    this.selectedExchange = exchange;
+                },
+
+                connectApi() {
+                    // モック: API接続成功
+                    this.apiConnected = true;
+                },
+
+                disconnectApi() {
+                    this.apiConnected = false;
+                    this.selectedExchange = '';
+                    this.apiKey = '';
+                    this.apiSecret = '';
+                },
+
+                toggleAsset(key) {
+                    if (this.selectedAssets.includes(key)) {
+                        this.selectedAssets = this.selectedAssets.filter(a => a !== key);
+                    } else {
+                        this.selectedAssets.push(key);
+                    }
+                },
+
+                startAutoTrade() {
+                    const riskLabel = this.riskLevels.find(l => l.value === this.riskLevel)?.label;
+                    alert('自動売買を開始しました！\n\n取引所: ' + this.selectedExchange + '\n対象銘柄: ' + this.selectedAssets.join(', ') + '\nリスクレベル: ' + riskLabel);
+                    window.location.href = 'index.html';
+                }
+            }
+        }
+    </script>
+
+<script src="js/plan-switcher.js"></script>
+</body>
+
+</html>

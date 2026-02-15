@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>AI Trade - 料金プラン</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #16202f;
+            --accent-gold: #fbbf24;
+            --accent-cyan: #06b6d4;
+            --accent-red: #f87171;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'IBM Plex Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overscroll-behavior: none;
+        }
+
+        h1, h2, h3 { font-family: 'Syne', sans-serif; }
+
+        .smooth-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card {
+            background: rgba(22, 32, 47, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .plan-card {
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .plan-card.free {
+            background: rgba(22, 32, 47, 0.5);
+            border: 1px solid rgba(251, 191, 36, 0.05);
+        }
+
+        .plan-card.standard {
+            background: rgba(22, 32, 47, 0.8);
+            border: 2px solid var(--accent-cyan);
+        }
+
+        @media (min-width: 768px) {
+            .plan-card.standard {
+                transform: scale(1.05);
+                grid-column: 2;
+                grid-row: 1;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .plan-card.standard {
+                transform: scale(1.02);
+            }
+        }
+
+        .plan-card.premium {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%);
+            border: 2px solid var(--accent-gold);
+        }
+
+        .plan-badge {
+            position: absolute;
+            top: -12px;
+            left: 24px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .plan-badge.popular {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .plan-badge.premium {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+        }
+
+        .feature-list li {
+            display: flex;
+            gap: 12px;
+        }
+
+        .feature-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .feature-included .feature-icon {
+            color: var(--accent-cyan);
+        }
+
+        .feature-unavailable {
+            opacity: 0.5;
+        }
+
+        .feature-highlight .feature-icon {
+            color: var(--accent-gold);
+        }
+
+        /* PC レスポンシブ対応 */
+        main {
+            width: 100%;
+            padding: 1.5rem 1rem;
+        }
+
+        @media (min-width: 768px) {
+            main {
+                padding: 2rem 1.5rem;
+                max-width: 1280px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            main {
+                padding: 2.5rem;
+                padding-left: 80px;
+                padding-right: 80px;
+            }
+            body {
+                padding-left: 270px;
+            }
+        }
+
+        .sidebar-nav { display: none; } @media (min-width: 1024px) { .sidebar-nav { display: flex; flex-direction: column; position: fixed; left: 0; top: 60px; bottom: 0; width: 240px; background: linear-gradient(180deg, rgba(15, 17, 23, 0.98) 0%, rgba(22, 32, 47, 0.95) 100%); backdrop-filter: blur(12px); border-right: 1px solid rgba(251, 191, 36, 0.1); z-index: 30; overflow-y: auto; padding: 20px 0; margin-right: 30px; } body { padding-left: 270px; padding-top: 60px; } header { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 999; } .sidebar-header { display: none; } } .sidebar-header { padding: 0 16px 24px 16px; border-bottom: 1px solid rgba(251, 191, 36, 0.1); } .sidebar-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; transition: all 0.2s ease; } .sidebar-brand:hover { opacity: 0.8; } .sidebar-logo { font-size: 24px; font-weight: bold; background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; } .sidebar-title { font-size: 18px; font-weight: 700; color: var(--text-primary); font-family: 'Syne', sans-serif; } .sidebar-nav-section { padding: 8px 16px 24px 16px; } .sidebar-nav-section:not(:first-of-type) { border-top: 1px solid rgba(251, 191, 36, 0.1); padding-top: 24px; } .sidebar-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; } .sidebar-nav-item { margin: 0; padding: 0; } .sidebar-nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; text-decoration: none; color: var(--text-secondary); font-size: 15px; font-weight: 500; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-left: 3px solid transparent; } .sidebar-nav-link:hover { background: rgba(251, 191, 36, 0.08); color: var(--text-primary); } .sidebar-nav-link.sidebar-active { background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%); color: var(--accent-gold); border-left: 3px solid var(--accent-gold); padding-left: 13px; } .sidebar-nav-icon { width: 20px; height: 20px; flex-shrink: 0; } .sidebar-footer { padding: 16px; border-top: 1px solid rgba(251, 191, 36, 0.1); margin-top: auto; } .sidebar-user-card { background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; } .sidebar-user-info { display: flex; align-items: center; gap: 12px; } .sidebar-user-avatar { width: 40px; height: 40px; border-radius: 50%; background: rgba(251, 191, 36, 0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; } .sidebar-user-name { font-size: 14px; font-weight: 600; color: var(--text-primary); } .sidebar-plan-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: rgba(251, 191, 36, 0.15); color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.5px; } .sidebar-upgrade-btn { display: block; width: 100%; padding: 10px 12px; border-radius: 8px; background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); color: var(--bg-primary); text-decoration: none; text-align: center; font-size: 13px; font-weight: 700; transition: all 0.2s ease; cursor: pointer; border: none; } .sidebar-upgrade-btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(251, 191, 36, 0.2); } .sidebar-nav::-webkit-scrollbar { width: 6px; } .sidebar-nav::-webkit-scrollbar-track { background: transparent; } .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.2); border-radius: 3px; } .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(251, 191, 36, 0.4); }
+    </style>
+</head>
+
+<body class="text-white min-h-screen pb-8">
+
+    <div x-data="pricingApp()">
+
+        <aside class="sidebar-nav"><div class="sidebar-header" style="display: none;"><a href="index.html" class="sidebar-brand"><span class="sidebar-logo">₿</span><span class="sidebar-title">AI Trade</span></a></div><nav class="sidebar-nav-section"><ul class="sidebar-nav-list"><li class="sidebar-nav-item"><a href="index.html" class="sidebar-nav-link" data-page="index.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span>ホーム</span></a></li><li class="sidebar-nav-item"><a href="performance.html" class="sidebar-nav-link" data-page="performance.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg><span>実績</span></a></li><li class="sidebar-nav-item"><a href="reports.html" class="sidebar-nav-link" data-page="reports.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span>レポート</span></a></li><li class="sidebar-nav-item"><a href="settings.html" class="sidebar-nav-link" data-page="settings.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>設定</span></a></li></ul></nav><div class="sidebar-footer"><div class="sidebar-user-card"><div class="sidebar-user-info"><div class="sidebar-user-avatar">👤</div><div><div class="sidebar-user-name">ゲストユーザー</div><span class="sidebar-plan-badge">Free</span></div></div><a href="pricing.html" class="sidebar-upgrade-btn">プランをアップグレード</a></div></div></aside>
+
+        <!-- ヘッダー -->
+        <header class="fixed top-0 left-0 right-0 z-10 border-b" style="background: linear-gradient(180deg, var(--bg-primary) 0%, rgba(15, 17, 23, 0.95) 100%); border-color: rgba(251, 191, 36, 0.1);">
+            <div class="px-4 py-3">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl font-bold" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">₿</span>
+                    <h1 class="text-lg font-bold">AI Trade</h1>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main>
+
+            <!-- ページタイトル -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold">💳 料金プラン</h2>
+            </div>
+
+            <!-- プラン説明 -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-3">あなたに合わせたプラン</h2>
+                <p style="color: var(--text-secondary);" class="text-sm">すべてのプランで7日間返金保証付き</p>
+            </div>
+
+            <!-- 支払いサイクル切り替え -->
+            <div class="flex justify-center mb-8">
+                <div class="flex rounded-full p-1" style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2);">
+                    <button @click="billingCycle = 'monthly'"
+                        :class="billingCycle === 'monthly' ? 'text-white' : 'text-gray-400'"
+                        class="px-6 py-2 rounded-full text-sm font-bold smooth-transition"
+                        :style="billingCycle === 'monthly' ? 'background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));' : ''">
+                        月額払い
+                    </button>
+                    <button @click="billingCycle = 'yearly'"
+                        :class="billingCycle === 'yearly' ? 'text-black' : 'text-gray-400'"
+                        class="px-6 py-2 rounded-full text-sm font-bold smooth-transition flex items-center gap-2"
+                        :style="billingCycle === 'yearly' ? 'background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));' : ''">
+                        年額払い
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background: var(--accent-cyan); color: var(--bg-primary);">20%OFF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- プラン一覧 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+                <!-- 無料プラン -->
+                <div class="plan-card free">
+                    <div class="flex items-start justify-between mb-5">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Free</h3>
+                            <p style="color: var(--text-tertiary);" class="text-sm">まずはお試し</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-3xl font-bold">¥0</p>
+                            <p style="color: var(--text-tertiary);" class="text-xs">永久無料</p>
+                        </div>
+                    </div>
+                    <ul class="feature-list space-y-2 mb-5 text-sm">
+                        <li class="feature-included">
+                            <span class="feature-icon">✓</span>
+                            <span>相場状況の表示</span>
+                        </li>
+                        <li class="feature-included">
+                            <span class="feature-icon">✓</span>
+                            <span>全時間足チャート</span>
+                        </li>
+                        <li class="feature-included">
+                            <span class="feature-icon">✓</span>
+                            <span>AIマーケット解説（先頭2行）</span>
+                        </li>
+                        <li class="feature-included">
+                            <span class="feature-icon">✓</span>
+                            <span>基本的なシグナル</span>
+                        </li>
+                        <li class="feature-unavailable">
+                            <span class="feature-icon">✗</span>
+                            <span>詳細分析レポート</span>
+                        </li>
+                        <li class="feature-unavailable">
+                            <span class="feature-icon">✗</span>
+                            <span>リアルタイム通知</span>
+                        </li>
+                    </ul>
+                    <div class="text-center text-xs py-2" style="color: var(--accent-cyan);">✓ 現在のプラン</div>
+                </div>
+
+                <!-- Standard プラン -->
+                <div class="plan-card standard">
+                    <div class="plan-badge popular">推奨</div>
+                    <div class="flex items-start justify-between mb-5 pt-2">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Standard</h3>
+                            <p style="color: var(--text-tertiary);" class="text-sm">本格的に分析したい方</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-3xl font-bold" x-text="billingCycle === 'monthly' ? '¥980' : '¥9,800'"></p>
+                            <p style="color: var(--text-tertiary);" class="text-xs" x-text="billingCycle === 'monthly' ? '/月' : '/年'"></p>
+                        </div>
+                    </div>
+                    <ul class="feature-list space-y-2 mb-5 text-sm">
+                        <li class="feature-included">
+                            <span class="feature-icon">✓</span>
+                            <span>Freeの全機能</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">AIマーケット解説（全文表示）</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">過去レポート全閲覧</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">相場急変時の通知</span>
+                        </li>
+                        <li class="feature-included">
+                            <span class="feature-icon">✓</span>
+                            <span>高度な分析ツール</span>
+                        </li>
+                        <li class="feature-unavailable">
+                            <span class="feature-icon">✗</span>
+                            <span>リアルタイム通知（優先配信）</span>
+                        </li>
+                    </ul>
+                    <button @click="selectPlan('standard')"
+                        class="w-full py-3 rounded-lg font-bold smooth-transition text-white"
+                        style="background: linear-gradient(135deg, var(--accent-cyan), #0891b2);">
+                        このプランを選択
+                    </button>
+                </div>
+
+                <!-- Premium プラン -->
+                <div class="plan-card premium">
+                    <div class="plan-badge premium">ELITE</div>
+                    <div class="flex items-start justify-between mb-5 pt-2">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Premium</h3>
+                            <p style="color: var(--text-tertiary);" class="text-sm">プロトレーダー向け</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-3xl font-bold" x-text="billingCycle === 'monthly' ? '¥4,980' : '¥49,800'"></p>
+                            <p style="color: var(--text-tertiary);" class="text-xs" x-text="billingCycle === 'monthly' ? '/月' : '/年'"></p>
+                        </div>
+                    </div>
+                    <ul class="feature-list space-y-2 mb-5 text-sm">
+                        <li class="feature-included">
+                            <span class="feature-icon">✓</span>
+                            <span>Standardの全機能</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">機関投資家レベルの詳細分析</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">AI予測・シナリオ分析</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">リアルタイム優先通知</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">専用サポート（24/5）</span>
+                        </li>
+                        <li class="feature-highlight">
+                            <span class="feature-icon">★</span>
+                            <span class="font-medium">ポートフォリオ管理ツール</span>
+                        </li>
+                    </ul>
+                    <button @click="selectPlan('premium')"
+                        class="w-full py-3 rounded-lg font-bold smooth-transition text-white"
+                        style="background: linear-gradient(135deg, var(--accent-gold), #f59e0b);">
+                        このプランを選択
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- 保証 -->
+            <div class="glass-card rounded-lg p-5 text-center mb-8">
+                <div class="flex items-center justify-center gap-2 mb-2">
+                    <span class="text-3xl">🛡️</span>
+                    <span class="font-bold text-lg">7日間返金保証</span>
+                </div>
+                <p style="color: var(--text-secondary);" class="text-sm">
+                    ご満足いただけない場合は、7日以内であれば全額返金いたします。
+                </p>
+            </div>
+
+            <!-- 注意事項 -->
+            <div style="color: var(--text-tertiary);" class="text-xs text-center px-4 space-y-1 mb-6">
+                <p>※ 本サービスは投資助言ではありません。</p>
+                <p>※ 投資判断はご自身の責任で行ってください。</p>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function pricingApp() {
+            return {
+                billingCycle: 'monthly',
+
+                selectPlan(plan) {
+                    const prices = {
+                        standard: this.billingCycle === 'monthly' ? '¥980/月' : '¥9,800/年',
+                        premium: this.billingCycle === 'monthly' ? '¥4,980/月' : '¥49,800/年'
+                    };
+
+                    localStorage.setItem('selectedPlan', plan);
+                    localStorage.setItem('selectedBillingCycle', this.billingCycle);
+                    localStorage.setItem('selectedPrice', prices[plan]);
+
+                    window.location.href = 'register.html';
+                }
+            }
+        }
+    </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.split('/').pop() || 'index.html';
+        document.querySelectorAll('.sidebar-nav-link').forEach(link => {
+            const linkPage = link.getAttribute('data-page');
+            if (linkPage === currentPage) {
+                link.classList.add('sidebar-active');
+            }
+        });
+        const planBadge = document.querySelector('.sidebar-plan-badge');
+        if (planBadge && window.PlanSwitcher) {
+            const currentPlan = window.PlanSwitcher.getCurrentPlan?.() || 'free';
+            const planLabels = { 'free': 'Free', 'plan1': 'Standard', 'plan2': 'Premium' };
+            planBadge.textContent = planLabels[currentPlan] || 'Free';
+        }
+        window.addEventListener('planChanged', (e) => {
+            const planBadge = document.querySelector('.sidebar-plan-badge');
+            if (planBadge) {
+                const planLabels = { 'free': 'Free', 'plan1': 'Standard', 'plan2': 'Premium' };
+                planBadge.textContent = planLabels[e.detail.plan] || 'Free';
+            }
+        });
+    });
+</script>
+
+<script src="js/plan-switcher.js"></script>
+</body>
+
+</html>

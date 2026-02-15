@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>AI Trade - レポート</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #16202f;
+            --accent-gold: #fbbf24;
+            --accent-cyan: #06b6d4;
+            --accent-red: #f87171;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'IBM Plex Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overscroll-behavior: none;
+        }
+
+        h1, h2, h3 { font-family: 'Syne', sans-serif; }
+
+        .smooth-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card {
+            background: rgba(22, 32, 47, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .tab-active {
+            color: var(--accent-gold);
+        }
+
+        .filter-btn {
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));
+            color: var(--bg-primary);
+            border-color: var(--accent-gold);
+        }
+
+        .filter-btn:not(.active) {
+            background: transparent;
+            color: var(--text-tertiary);
+            border-color: rgba(251, 191, 36, 0.2);
+        }
+
+        /* PC レスポンシブ対応 */
+        main {
+            width: 100%;
+            padding: 1.5rem 1rem;
+        }
+
+        @media (min-width: 768px) {
+            main {
+                padding: 2rem 1.5rem;
+                max-width: 1280px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            main {
+                padding: 2.5rem;
+                padding-left: 80px;
+                padding-right: 80px;
+            }
+            body {
+                padding-left: 270px;
+            }
+        }
+
+        .mobile-bottom-nav .flex { width: 100%; }
+        .mobile-bottom-nav a { flex: 1; }
+
+        /* Desktop Sidebar Navigation */
+        .sidebar-nav { display: none; }
+        .mobile-bottom-nav { display: flex; }
+        @media (min-width: 1024px) {
+            .sidebar-nav { display: flex; flex-direction: column; position: fixed; left: 0; top: 60px; bottom: 0; width: 240px; background: linear-gradient(180deg, rgba(15, 17, 23, 0.98) 0%, rgba(22, 32, 47, 0.95) 100%); backdrop-filter: blur(12px); border-right: 1px solid rgba(251, 191, 36, 0.1); z-index: 30; overflow-y: auto; padding: 20px 0; margin-right: 30px; }
+            body { padding-left: 270px; padding-bottom: 0; padding-top: 60px; }
+            .mobile-bottom-nav { display: none; }
+            header { position: fixed; top: 0; left: 0; right: 0; width: 100%; z-index: 999; }
+            .sidebar-header { display: none; }
+        }
+        .sidebar-header { padding: 0 16px 24px 16px; border-bottom: 1px solid rgba(251, 191, 36, 0.1); }
+        .sidebar-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; transition: all 0.2s ease; }
+        .sidebar-brand:hover { opacity: 0.8; }
+        .sidebar-logo { font-size: 24px; font-weight: bold; background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .sidebar-title { font-size: 18px; font-weight: 700; color: var(--text-primary); font-family: 'Syne', sans-serif; }
+        .sidebar-nav-section { padding: 8px 16px 24px 16px; }
+        .sidebar-nav-section:not(:first-of-type) { border-top: 1px solid rgba(251, 191, 36, 0.1); padding-top: 24px; }
+        .sidebar-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+        .sidebar-nav-item { margin: 0; padding: 0; }
+        .sidebar-nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; text-decoration: none; color: var(--text-secondary); font-size: 15px; font-weight: 500; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-left: 3px solid transparent; }
+        .sidebar-nav-link:hover { background: rgba(251, 191, 36, 0.08); color: var(--text-primary); }
+        .sidebar-nav-link.sidebar-active { background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%); color: var(--accent-gold); border-left: 3px solid var(--accent-gold); padding-left: 13px; }
+        .sidebar-nav-icon { width: 20px; height: 20px; flex-shrink: 0; }
+        .sidebar-secondary { padding: 8px 16px; flex: 1; }
+        .sidebar-secondary-title { font-size: 11px; color: var(--text-tertiary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; padding: 0 16px 12px 16px; margin: 0; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid rgba(251, 191, 36, 0.1); margin-top: auto; }
+        .sidebar-user-card { background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.15); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .sidebar-user-info { display: flex; align-items: center; gap: 12px; }
+        .sidebar-user-avatar { width: 40px; height: 40px; border-radius: 50%; background: rgba(251, 191, 36, 0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .sidebar-user-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .sidebar-plan-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: rgba(251, 191, 36, 0.15); color: var(--accent-gold); text-transform: uppercase; letter-spacing: 0.5px; }
+        .sidebar-upgrade-btn { display: block; width: 100%; padding: 10px 12px; border-radius: 8px; background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); color: var(--bg-primary); text-decoration: none; text-align: center; font-size: 13px; font-weight: 700; transition: all 0.2s ease; cursor: pointer; border: none; }
+        .sidebar-upgrade-btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(251, 191, 36, 0.2); }
+        .sidebar-nav::-webkit-scrollbar { width: 6px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.2); border-radius: 3px; }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(251, 191, 36, 0.4); }
+    </style>
+</head>
+
+<body class="text-white min-h-screen pb-20">
+
+    <div x-data="reportsApp()">
+
+        <!-- Desktop Sidebar Navigation -->
+        <aside class="sidebar-nav">
+            <div class="sidebar-header" style="display: none;">
+                <a href="index.html" class="sidebar-brand">
+                    <span class="sidebar-logo">₿</span>
+                    <span class="sidebar-title">AI Trade</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav-section">
+                <ul class="sidebar-nav-list">
+                    <li class="sidebar-nav-item"><a href="index.html" class="sidebar-nav-link" data-page="index.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span>ホーム</span></a></li>
+                    <li class="sidebar-nav-item"><a href="performance.html" class="sidebar-nav-link" data-page="performance.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg><span>実績</span></a></li>
+                    <li class="sidebar-nav-item"><a href="reports.html" class="sidebar-nav-link" data-page="reports.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span>レポート</span></a></li>
+                    <li class="sidebar-nav-item"><a href="settings.html" class="sidebar-nav-link" data-page="settings.html"><svg class="sidebar-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>設定</span></a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-avatar">👤</div>
+                        <div>
+                            <div class="sidebar-user-name">ゲストユーザー</div>
+                            <span class="sidebar-plan-badge">Free</span>
+                        </div>
+                    </div>
+                    <a href="pricing.html" class="sidebar-upgrade-btn">プランをアップグレード</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ヘッダー -->
+        <header class="fixed top-0 left-0 right-0 z-10 border-b" style="background: linear-gradient(180deg, var(--bg-primary) 0%, rgba(15, 17, 23, 0.95) 100%); border-color: rgba(251, 191, 36, 0.1);">
+            <div class="px-4 py-3">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl font-bold" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">₿</span>
+                    <h1 class="text-lg font-bold">AI Trade</h1>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main>
+
+            <!-- ページタイトル -->
+            <div class="mb-6">
+                <h2 class="text-lg font-bold mb-4">📋 レポート</h2>
+                <div class="flex gap-2 overflow-x-auto pb-2">
+                    <button @click="filter = 'all'" :class="filter === 'all' ? 'active' : ''" class="filter-btn whitespace-nowrap">すべて</button>
+                    <button @click="filter = 'daily'" :class="filter === 'daily' ? 'active' : ''" class="filter-btn whitespace-nowrap">日次</button>
+                    <button @click="filter = 'weekly'" :class="filter === 'weekly' ? 'active' : ''" class="filter-btn whitespace-nowrap">週次</button>
+                </div>
+            </div>
+
+            <!-- 最新の週次レポート（ピン留め） -->
+            <div class="glass-card premium rounded-xl p-5 mb-6" style="border: 1px solid rgba(251, 191, 36, 0.2);">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background: var(--accent-cyan); color: var(--bg-primary);">📌 LATEST</span>
+                    <span class="text-xs px-2.5 py-1 rounded-full font-bold" style="background: rgba(251, 191, 36, 0.2); color: var(--accent-gold);">Weekly</span>
+                </div>
+                <h3 class="text-lg font-bold mb-2">週次レポート：2/3〜2/9</h3>
+                <p class="text-sm leading-relaxed mb-4" style="color: var(--text-secondary);">今週のビットコインは週初に1,480万円台まで下落したものの、その後は反発し1,520万円台を回復。週足では陽線を形成...</p>
+                <a href="#" class="text-sm font-bold flex items-center gap-1" style="color: var(--accent-cyan);">
+                    続きを読む
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- レポート一覧 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                <template x-for="report in filteredReports" :key="report.id">
+                    <div class="glass-card rounded-lg p-4 hover:border-yellow-400/20 smooth-transition" style="border: 1px solid rgba(251, 191, 36, 0.08);">
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <span class="text-xs px-2 py-0.5 rounded font-bold"
+                                :class="report.type === 'weekly' ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-700/50 text-gray-300'"
+                                x-text="report.type === 'weekly' ? 'Weekly' : 'Daily'"></span>
+                            <span style="color: var(--text-tertiary);" class="text-xs" x-text="report.date"></span>
+                            <span class="text-xs px-2 py-0.5 rounded font-bold" :class="{
+                                    'bg-cyan-500/20 text-cyan-400': report.status === 'bull',
+                                    'bg-red-500/20 text-red-400': report.status === 'bear',
+                                    'bg-gray-500/20 text-gray-400': report.status === 'range'
+                                }" x-text="report.statusLabel"></span>
+                        </div>
+                        <h3 class="font-bold text-base mb-1" x-text="report.title"></h3>
+                        <p class="text-sm line-clamp-2" style="color: var(--text-secondary);" x-text="report.summary"></p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- 有料プラン誘導 -->
+            <div class="glass-card rounded-lg p-5 text-center" style="border: 1px dashed rgba(251, 191, 36, 0.3);">
+                <p class="text-sm mb-3" style="color: var(--text-secondary);">過去のレポートをすべて閲覧するには有料プランが必要です</p>
+                <a href="pricing.html" class="inline-block text-xs font-bold px-4 py-2 rounded-lg smooth-transition" style="background: linear-gradient(135deg, var(--accent-gold), var(--accent-cyan)); color: var(--bg-primary);">
+                    Standardプランで解除
+                </a>
+            </div>
+
+        </main>
+
+        <!-- 下部タブバー -->
+        <nav class="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-20" style="background: linear-gradient(180deg, rgba(15, 17, 23, 0) 0%, var(--bg-primary) 20%); border-top: 1px solid rgba(251, 191, 36, 0.1); backdrop-filter: blur(12px);">
+            <div class="flex justify-around items-center h-16">
+                <a href="index.html" class="flex flex-col items-center justify-center w-full h-full smooth-transition" style="color: var(--text-tertiary); transition: color 0.3s;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                        </path>
+                    </svg>
+                    <span class="text-xs mt-1 font-medium">ホーム</span>
+                </a>
+                <a href="performance.html" class="flex flex-col items-center justify-center w-full h-full smooth-transition" style="color: var(--text-tertiary); transition: color 0.3s;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6">
+                        </path>
+                    </svg>
+                    <span class="text-xs mt-1 font-medium">実績</span>
+                </a>
+                <a href="reports.html" class="flex flex-col items-center justify-center w-full h-full smooth-transition tab-active">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    <span class="text-xs mt-1 font-medium">レポート</span>
+                </a>
+                <a href="settings.html" class="flex flex-col items-center justify-center w-full h-full smooth-transition" style="color: var(--text-tertiary); transition: color 0.3s;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span class="text-xs mt-1 font-medium">設定</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        function reportsApp() {
+            return {
+                filter: 'all',
+                reports: [
+                    {
+                        id: 1,
+                        type: 'daily',
+                        date: '2026/02/08',
+                        title: '米雇用統計後の反応は限定的',
+                        summary: '米雇用統計は予想を上回る結果となったが、ビットコインへの影響は限定的。1,500万円台を維持。',
+                        status: 'bull',
+                        statusLabel: '上昇'
+                    },
+                    {
+                        id: 2,
+                        type: 'daily',
+                        date: '2026/02/07',
+                        title: '米雇用統計を前に様子見ムード',
+                        summary: '翌日の米雇用統計発表を控え、積極的な売買は見られず。出来高は低調な推移。',
+                        status: 'range',
+                        statusLabel: '横ばい'
+                    },
+                    {
+                        id: 3,
+                        type: 'daily',
+                        date: '2026/02/06',
+                        title: '1,520万円台を回復',
+                        summary: '週初の下落から反発し、1,520万円台を回復。買い戻しの動きが優勢に。',
+                        status: 'bull',
+                        statusLabel: '上昇'
+                    },
+                    {
+                        id: 4,
+                        type: 'daily',
+                        date: '2026/02/05',
+                        title: '反発の兆し',
+                        summary: '1,480万円台で下げ止まり、反発の動き。短期的なサポートラインとして機能。',
+                        status: 'bull',
+                        statusLabel: '上昇'
+                    },
+                    {
+                        id: 5,
+                        type: 'weekly',
+                        date: '1/27〜2/2',
+                        title: '週次レポート：調整局面継続',
+                        summary: '先週からの調整局面が継続。週足では陰線を形成したが、中期的なサポートは維持。',
+                        status: 'bear',
+                        statusLabel: '下落'
+                    },
+                    {
+                        id: 6,
+                        type: 'daily',
+                        date: '2026/02/04',
+                        title: '週初から下落スタート',
+                        summary: '週明けはリスクオフムードが優勢となり、1,480万円台まで下落。週足の調整が進行。',
+                        status: 'bear',
+                        statusLabel: '下落'
+                    }
+                ],
+
+                get filteredReports() {
+                    if (this.filter === 'all') return this.reports;
+                    return this.reports.filter(r => r.type === this.filter);
+                }
+            }
+        }
+    </script>
+
+<script>
+    // Initialize sidebar active state
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPath = window.location.pathname;
+        const currentPage = currentPath.split('/').pop() || 'index.html';
+
+        document.querySelectorAll('.sidebar-nav-link').forEach(link => {
+            const linkPage = link.getAttribute('data-page');
+            if (linkPage === currentPage) {
+                link.classList.add('sidebar-active');
+            }
+        });
+
+        const planBadge = document.querySelector('.sidebar-plan-badge');
+        if (planBadge && window.PlanSwitcher) {
+            const currentPlan = window.PlanSwitcher.getCurrentPlan?.() || 'free';
+            const planLabels = { 'free': 'Free', 'plan1': 'Standard', 'plan2': 'Premium' };
+            planBadge.textContent = planLabels[currentPlan] || 'Free';
+        }
+
+        window.addEventListener('planChanged', (e) => {
+            const planBadge = document.querySelector('.sidebar-plan-badge');
+            if (planBadge) {
+                const planLabels = { 'free': 'Free', 'plan1': 'Standard', 'plan2': 'Premium' };
+                planBadge.textContent = planLabels[e.detail.plan] || 'Free';
+            }
+        });
+    });
+</script>
+
+<script src="js/plan-switcher.js"></script>
+</body>
+
+</html>
