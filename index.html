@@ -182,7 +182,7 @@
     /* PC レスポンシブ対応 */
     main {
       width: 100%;
-      padding: 1rem 16px;
+      padding: 80px 16px 1rem 16px;
     }
 
     @media (min-width: 768px) {
@@ -640,26 +640,25 @@
     <!-- メインコンテンツ -->
     <main>
 
-      <!-- ========== 通貨選択 ========== -->
-      <div class="mb-6" x-data="{ currencyOpen: false, selectedCurrency: 'Bitcoin' }">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold">🏠 ホーム</h2>
-          <div class="currency-dropdown">
-            <button @click="currencyOpen = !currencyOpen" class="currency-dropdown-btn">
-              <span x-text="selectedCurrency"></span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-              </svg>
-            </button>
+      <!-- ========== ホームタイトル & 通貨選択 ========== -->
+      <div class="mb-6 flex items-center justify-between" x-data="{ currencyOpen: false, selectedCurrency: 'Bitcoin' }">
+        <h2 class="text-lg font-bold">🏠 ホーム</h2>
 
-            <!-- Dropdown Menu -->
-            <div class="currency-dropdown-menu" x-show="currencyOpen" @click.outside="currencyOpen = false">
-              <div class="currency-dropdown-item" @click="selectedCurrency = 'Bitcoin'; currencyOpen = false" :class="selectedCurrency === 'Bitcoin' ? 'active' : ''">Bitcoin (BTC)</div>
-              <div class="currency-dropdown-item" @click="selectedCurrency = 'Ethereum'; currencyOpen = false" :class="selectedCurrency === 'Ethereum' ? 'active' : ''">Ethereum (ETH)</div>
-              <div class="currency-dropdown-item" @click="selectedCurrency = 'Ripple'; currencyOpen = false" :class="selectedCurrency === 'Ripple' ? 'active' : ''">Ripple (XRP)</div>
-              <div class="currency-dropdown-item" @click="selectedCurrency = 'Cardano'; currencyOpen = false" :class="selectedCurrency === 'Cardano' ? 'active' : ''">Cardano (ADA)</div>
-              <div class="currency-dropdown-item" @click="selectedCurrency = 'Solana'; currencyOpen = false" :class="selectedCurrency === 'Solana' ? 'active' : ''">Solana (SOL)</div>
-            </div>
+        <div class="currency-dropdown">
+          <button @click="currencyOpen = !currencyOpen" class="currency-dropdown-btn">
+            <span x-text="selectedCurrency" class="whitespace-nowrap"></span>
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+            </svg>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div class="currency-dropdown-menu" x-show="currencyOpen" @click.outside="currencyOpen = false">
+            <div class="currency-dropdown-item" @click="selectedCurrency = 'Bitcoin'; currencyOpen = false" :class="selectedCurrency === 'Bitcoin' ? 'active' : ''">Bitcoin (BTC)</div>
+            <div class="currency-dropdown-item" @click="selectedCurrency = 'Ethereum'; currencyOpen = false" :class="selectedCurrency === 'Ethereum' ? 'active' : ''">Ethereum (ETH)</div>
+            <div class="currency-dropdown-item" @click="selectedCurrency = 'Ripple'; currencyOpen = false" :class="selectedCurrency === 'Ripple' ? 'active' : ''">Ripple (XRP)</div>
+            <div class="currency-dropdown-item" @click="selectedCurrency = 'Cardano'; currencyOpen = false" :class="selectedCurrency === 'Cardano' ? 'active' : ''">Cardano (ADA)</div>
+            <div class="currency-dropdown-item" @click="selectedCurrency = 'Solana'; currencyOpen = false" :class="selectedCurrency === 'Solana' ? 'active' : ''">Solana (SOL)</div>
           </div>
         </div>
       </div>
@@ -675,9 +674,6 @@
               <span x-text="priceChange >= 0 ? '↗' : '↘'"></span>
               <span x-text="Math.abs(priceChange).toFixed(2) + '%'"></span>
             </span>
-          </div>
-          <div class="text-xs" style="color: var(--text-tertiary);">
-            <span x-text="'日足: ' + highPrice.toLocaleString('ja-JP') + '〜' + lowPrice.toLocaleString('ja-JP')"></span>
           </div>
         </div>
 
